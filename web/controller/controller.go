@@ -25,47 +25,29 @@ func NewController(app *app.App, logger *logger.Logger) *Controller {
 }
 
 func (c *Controller) ShowStream(w http.ResponseWriter, r *http.Request) {
-	mimewriter := multipart.NewWriter(w)
-	w.Header().Set("Content-Type", fmt.Sprintf("multipart/x-mixed-replace; boundary=%s", mimewriter.Boundary()))
+	mimeWriter := multipart.NewWriter(w)
+	w.Header().Set("Content-Type", fmt.Sprintf("multipart/x-mixed-replace; boundary=%s", mimeWriter.Boundary()))
 	partHeader := make(textproto.MIMEHeader)
 	partHeader.Add("Content-Type", "image/jpeg")
 	frames, closeChan := c.app.StartStream()
 	defer close(closeChan)
 
-	/*fr := <-frames
-
-	pic, err := os.Create("test.jpg")
-	fmt.Println(err)
-	pic.Write(fr)
-	pic.Close()
-
-	part, err := mimewriter.CreatePart(partHeader)
-	if err != nil {
-		c.logger.LogError(err, "Error creating part")
-		return
-	}
-	//fmt.Println(frame)
-	if _, err = part.Write(fr); err != nil {
-		c.logger.LogError(err, "Error writing frame")
-	}*/
-
 	for frame := range frames {
 		if len(frame) == 0 {
 			continue
 		}
-		part, err := mimewriter.CreatePart(partHeader)
+		part, err := mimeWriter.CreatePart(partHeader)
 		if err != nil {
 			c.logger.LogError(err, "Error creating part")
 			return
 		}
-		//fmt.Println(frame)
+
 		_, err = part.Write(frame)
 
 		if err != nil {
 			c.logger.LogError(err, "Error writing frame")
 			continue
 		}
-		//fmt.Println(n, " Frames Written")
 	}
 }
 
@@ -105,8 +87,6 @@ func (c *Controller) UploadFile(w http.ResponseWriter, r *http.Request) {
 		helper.ReturnFailure(w, apperror.InvalidRequest)
 		return
 	}
-
-	fmt.Println(file)
 
 	if err := c.app.UploadRecording(file.FileName); err != nil {
 		helper.ReturnFailure(w, err)
