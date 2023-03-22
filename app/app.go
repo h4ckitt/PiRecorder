@@ -156,6 +156,7 @@ func (a *App) StartStream() (chan []byte, chan struct{}) {
 	a.logger.LogInfo("Starting the stream")
 	streamChan := make(chan []byte, 65535)
 	closeChan := make(chan struct{})
+	var prevFrame []byte
 
 	go func() {
 		for {
@@ -164,7 +165,13 @@ func (a *App) StartStream() (chan []byte, chan struct{}) {
 				a.logger.LogInfo("Closing the stream")
 				return
 			default:
-				streamChan <- a.mux.GetFrame()
+				frame := a.mux.GetFrame()
+
+				if bytes.Equal(frame, prevFrame) {
+					continue
+				}
+				streamChan <- frame
+				prevFrame = frame
 			}
 		}
 	}()
@@ -209,7 +216,6 @@ func (a *App) StartRecording(filename string) error {
 			}
 			prevFrame = frame
 		}
-		fmt.Println("Recording stopped")
 	}()
 	return nil
 }
@@ -246,7 +252,6 @@ func (a *App) UploadRecording(filename string) error {
 
 	videosFolder := config.GetConfig().VideosFolder
 	_, err := os.Stat(fmt.Sprintf("%s/%s", videosFolder, filename))
-	fmt.Println(err)
 
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
