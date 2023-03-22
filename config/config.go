@@ -28,10 +28,18 @@ func Load() {
 		LogFolder:    os.Getenv("LOG_FOLDER"),
 		VideosFolder: os.Getenv("VIDEOS_FOLDER"),
 		S3Config: S3{
+			Bucket:    os.Getenv("S3_BUCKET_NAME"),
 			AccessKey: os.Getenv("S3_ACCESS_KEY"),
 			SecretKey: os.Getenv("S3_SECRET_KEY"),
 			Region:    os.Getenv("S3_REGION"),
 		},
+		Port: func() string {
+			port := os.Getenv("PORT")
+			if port == "" {
+				return "8080"
+			}
+			return port
+		}(),
 	}
 }
 

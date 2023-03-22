@@ -3,6 +3,7 @@ package config
 type Config struct {
 	LogFolder    string
 	VideosFolder string
+	Port         string
 	S3Config     S3
 }
 
