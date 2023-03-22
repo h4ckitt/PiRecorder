@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -14,7 +13,7 @@ type Logger struct {
 
 func NewLogger(filename string) (*Logger, error) {
 	dirname := filepath.Dir(filename)
-	fmt.Println(dirname)
+	
 	_, err := os.Stat(dirname)
 
 	if err != nil {
