@@ -446,7 +446,6 @@ func (a *App) AppStatus() *models.Status {
 
 	availPercentage = float32(truncate(float64(availPercentage), 0.01))
 
-	//ToDO: Verify DiskUsage Info
 	return &models.Status{
 		CameraUp:  a.isCamUp,
 		Recording: a.isRecording,
