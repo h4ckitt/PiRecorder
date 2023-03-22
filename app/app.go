@@ -440,8 +440,6 @@ func (a *App) AppStatus() *models.Status {
 
 	availableBlocks := float32(stat.Bavail) * float32(stat.Bsize)
 	totalBlocks := float32(stat.Blocks) * float32(stat.Bsize)
-	fmt.Println(totalBlocks)
-	fmt.Println(availableBlocks)
 	availPercentage := (100 - ((availableBlocks / totalBlocks) * 100)) / 100
 
 	availPercentage = float32(truncate(float64(availPercentage), 0.01))
