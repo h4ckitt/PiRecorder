@@ -24,7 +24,7 @@ func NewController(app *app.App, logger *logger.Logger) *Controller {
 	}
 }
 
-func (c *Controller) ShowStream(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) ShowStream(w http.ResponseWriter, _ *http.Request) {
 	mimeWriter := multipart.NewWriter(w)
 	w.Header().Set("Content-Type", fmt.Sprintf("multipart/x-mixed-replace; boundary=%s", mimeWriter.Boundary()))
 	partHeader := make(textproto.MIMEHeader)
@@ -71,9 +71,10 @@ func (c *Controller) StartRecording(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *Controller) StopRecording(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) StopRecording(w http.ResponseWriter, _ *http.Request) {
 	c.app.StopRecording()
 	c.logger.LogInfo("stopping recording")
+	helper.ReturnSuccess(w, nil)
 }
 
 func (c *Controller) UploadFile(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +97,7 @@ func (c *Controller) UploadFile(w http.ResponseWriter, r *http.Request) {
 	helper.ReturnSuccess(w, nil)
 }
 
-func (c *Controller) ListFiles(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) ListFiles(w http.ResponseWriter, _ *http.Request) {
 	c.logger.LogInfo("list files request received")
 
 	files, err := c.app.FetchRecordings()
@@ -121,7 +122,7 @@ func (c *Controller) UploadAllFiles(w http.ResponseWriter, _ *http.Request) {
 	helper.ReturnSuccess(w, nil)
 }
 
-func (c *Controller) DeviceStatus(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) DeviceStatus(w http.ResponseWriter, _ *http.Request) {
 	c.logger.LogInfo("fetching device status")
 	helper.ReturnSuccess(w, c.app.AppStatus())
 }
