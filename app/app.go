@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"io"
+	"math/big"
 	"os"
 	"os/exec"
 	"pirecorder/apperror"
@@ -437,11 +438,34 @@ func (a *App) AppStatus() *models.Status {
 		return nil
 	}
 
+	availableBlocks := float32(stat.Bavail) * float32(stat.Bsize)
+	totalBlocks := float32(stat.Blocks) * float32(stat.Bsize)
+	fmt.Println(totalBlocks)
+	fmt.Println(availableBlocks)
+	availPercentage := (100 - ((availableBlocks / totalBlocks) * 100)) / 100
+
+	availPercentage = float32(truncate(float64(availPercentage), 0.01))
+
 	//ToDO: Verify DiskUsage Info
 	return &models.Status{
 		CameraUp:  a.isCamUp,
 		Recording: a.isRecording,
 		Uploading: a.isUploading,
-		DiskUsage: float32(stat.Bavail) / float32(stat.Blocks),
+		DiskUsage: availPercentage,
 	}
+}
+
+func truncate(num float64, unit float64) float64 {
+	bf := big.NewFloat(0).SetPrec(1000).SetFloat64(num)
+	bu := big.NewFloat(0).SetPrec(1000).SetFloat64(unit)
+
+	bf.Quo(bf, bu)
+
+	i := big.NewInt(0)
+	bf.Int(i)
+	bf.SetInt(i)
+
+	f, _ := bf.Mul(bf, bu).Float64()
+
+	return f
 }
