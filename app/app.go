@@ -13,6 +13,7 @@ import (
 	"pirecorder/logger"
 	"pirecorder/models"
 	"sort"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -158,6 +159,7 @@ func (a *App) StartStream() (chan []byte, chan struct{}) {
 	streamChan := make(chan []byte, 65535)
 	closeChan := make(chan struct{})
 	var prevFrame []byte
+	ticker := time.Tick(33 * time.Millisecond) // 30 fps
 
 	go func() {
 		for {
@@ -165,7 +167,7 @@ func (a *App) StartStream() (chan []byte, chan struct{}) {
 			case <-closeChan:
 				a.logger.LogInfo("Closing the stream")
 				return
-			default:
+			case <-ticker:
 				frame := a.mux.GetFrame()
 
 				if bytes.Equal(frame, prevFrame) {
@@ -206,7 +208,9 @@ func (a *App) StartRecording(filename string) error {
 			a.recordName = ""
 		}()
 		var prevFrame []byte
+		ticker := time.Tick(33 * time.Millisecond) // 30 fps
 		for a.isRecording {
+			<-ticker
 			frame := a.mux.GetFrame()
 			if bytes.Equal(frame, prevFrame) {
 				continue
