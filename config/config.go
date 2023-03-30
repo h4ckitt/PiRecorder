@@ -36,6 +36,10 @@ func Load() {
 			Region:      os.Getenv("S3_REGION"),
 			EndpointUrl: os.Getenv("S3_ENDPOINT_URL"),
 		},
+		SSLConfig: SSL{
+			CertFile: os.Getenv("SSL_CERT_FILE"),
+			KeyFile:  os.Getenv("SSL_KEY_FILE"),
+		},
 		Port: func() string {
 			port := os.Getenv("PORT")
 			if port == "" {

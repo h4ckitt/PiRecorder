@@ -7,6 +7,7 @@ type Config struct {
 	AudiosFolder string
 	Port         string
 	S3Config     S3
+	SSLConfig    SSL
 }
 
 type S3 struct {
@@ -15,4 +16,9 @@ type S3 struct {
 	Region      string
 	Bucket      string
 	EndpointUrl string
+}
+
+type SSL struct {
+	CertFile string
+	KeyFile  string
 }
