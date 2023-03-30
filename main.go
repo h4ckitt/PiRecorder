@@ -33,8 +33,6 @@ func main() {
 	ctrl := controller.NewController(svc, logman)
 	r := router.InitRouter(ctrl, logman)
 
-	logman.LogInfo("Starting server on port 8080")
-
 	sslConfig := config.GetConfig().SSLConfig
 
 	server := &http.Server{
