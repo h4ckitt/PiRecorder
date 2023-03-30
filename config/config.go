@@ -27,11 +27,14 @@ func Load() {
 	Conf = Config{
 		LogFolder:    os.Getenv("LOG_FOLDER"),
 		VideosFolder: os.Getenv("VIDEOS_FOLDER"),
+		AudiosFolder: os.Getenv("AUDIOS_FOLDER"),
+		Environment:  os.Getenv("PIRECORDER_ENVIRONMENT"),
 		S3Config: S3{
-			Bucket:    os.Getenv("S3_BUCKET_NAME"),
-			AccessKey: os.Getenv("S3_ACCESS_KEY"),
-			SecretKey: os.Getenv("S3_SECRET_KEY"),
-			Region:    os.Getenv("S3_REGION"),
+			Bucket:      os.Getenv("S3_BUCKET_NAME"),
+			AccessKey:   os.Getenv("S3_ACCESS_KEY"),
+			SecretKey:   os.Getenv("S3_SECRET_KEY"),
+			Region:      os.Getenv("S3_REGION"),
+			EndpointUrl: os.Getenv("S3_ENDPOINT_URL"),
 		},
 		Port: func() string {
 			port := os.Getenv("PORT")
