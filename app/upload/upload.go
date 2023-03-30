@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"pirecorder/app/helper"
 	"pirecorder/apperror"
 	"pirecorder/config"
 	"pirecorder/logger"
@@ -213,43 +214,14 @@ func (u *Uploader) UploadRecordings() error {
 		u.isUploading = false
 		u.uploadName = ""
 	}()
-	var files []string
 	videosFolder := config.GetConfig().VideosFolder
 	audiosFolder := config.GetConfig().AudiosFolder
-	u.logger.LogInfo("Uploading All Videos And Audios to S3", "video_folderName", videosFolder, "audio_folderName", audiosFolder)
-	fd, err := os.Open(videosFolder)
+	files, err := helper.FetchFiles()
 
 	if err != nil {
-		u.logger.LogError(err, "Error opening videos folder", "function", "UploadAllRecordings", "folder_name", videosFolder)
+		u.logger.LogError(err, "Error fetching files", "function", "UploadAllRecording")
 		return apperror.ServerError
 	}
-
-	videoFiles, err := fd.Readdirnames(0)
-
-	if err != nil {
-		u.logger.LogError(err, "Error reading videos folder", "function", "UploadAllRecordings", "folder_name", videosFolder)
-		return apperror.ServerError
-	}
-
-	files = append(files, videoFiles...)
-
-	fd, err = os.Open(audiosFolder)
-
-	if err != nil {
-		u.logger.LogError(err, "Error opening audios folder", "function", "UploadAllRecordings", "folder_name", audiosFolder)
-		return apperror.ServerError
-	}
-
-	audioFiles, err := fd.Readdirnames(0)
-
-	if err != nil {
-		u.logger.LogError(err, "Error reading audios folder", "function", "UploadAllRecordings", "folder_name", audiosFolder)
-		return apperror.ServerError
-	}
-
-	files = append(files, audioFiles...)
-
-	_ = fd.Close()
 
 	deviceHostName, err := os.Hostname()
 
@@ -320,6 +292,14 @@ func (u *Uploader) UploadRecordings() error {
 	}
 
 	return nil
+}
+
+func (u *Uploader) InformRecordingStart() {
+	u.videoIsRecording = true
+}
+
+func (u *Uploader) InformRecordingStop() {
+	u.videoIsRecording = false
 }
 
 func performCallBack(filename string) error {

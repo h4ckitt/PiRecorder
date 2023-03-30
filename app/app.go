@@ -3,9 +3,9 @@ package app
 import (
 	"errors"
 	"golang.org/x/sys/unix"
-	"math/big"
 	"os"
 	"pirecorder/app/audio"
+	"pirecorder/app/helper"
 	"pirecorder/app/upload"
 	"pirecorder/app/video"
 	"pirecorder/apperror"
@@ -90,6 +90,8 @@ func (a *App) StartRecording(filename string) error {
 		camErr = true
 	}
 
+	a.uploader.InformRecordingStart()
+
 	if err := a.mic.StartRecording(filename); err != nil {
 		a.logger.LogError(err, "Error starting mic recording")
 		micErr = true
@@ -106,6 +108,7 @@ func (a *App) StartRecording(filename string) error {
 func (a *App) StopRecording() {
 	a.camera.StopRecording()
 	a.mic.StopRecording()
+	a.uploader.InformRecordingStop()
 }
 
 func (a *App) UploadRecording(filename string) error {
@@ -129,17 +132,21 @@ func (a *App) FetchRecordings() ([]models.FileDetails, error) {
 
 	defer func() { _ = fd.Close() }()
 
-	files, err := fd.Readdirnames(0)
+	files, err := helper.FetchFiles()
 
 	if err != nil {
 		a.logger.LogError(err, "Error reading videos folder", "folder_name", videosFolder)
 		return nil, apperror.ServerError
 	}
 
-	var fileDetails []models.FileDetails
+	var (
+		fileDetails []models.FileDetails
+		ext         string
+	)
 
 	for _, file := range files {
-		if file[len(file)-4:] != ".avi" {
+		ext = file[len(file)-4:]
+		if ext != ".avi" && ext != ".wav" {
 			continue
 		}
 		fileDetail := models.FileDetails{
@@ -172,7 +179,7 @@ func (a *App) AppStatus() *models.Status {
 	totalBlocks := float32(stat.Blocks) * float32(stat.Bsize)
 	availPercentage := (100 - ((availableBlocks / totalBlocks) * 100)) / 100
 
-	availPercentage = float32(truncate(float64(availPercentage), 0.01))
+	availPercentage = float32(helper.Truncate(float64(availPercentage), 0.01))
 
 	return &models.Status{
 		CameraUp:  a.camera.CamStatus(),
@@ -180,19 +187,4 @@ func (a *App) AppStatus() *models.Status {
 		Uploading: uploadStat,
 		DiskUsage: availPercentage,
 	}
-}
-
-func truncate(num float64, unit float64) float64 {
-	bf := big.NewFloat(0).SetPrec(1000).SetFloat64(num)
-	bu := big.NewFloat(0).SetPrec(1000).SetFloat64(unit)
-
-	bf.Quo(bf, bu)
-
-	i := big.NewInt(0)
-	bf.Int(i)
-	bf.SetInt(i)
-
-	f, _ := bf.Mul(bf, bu).Float64()
-
-	return f
 }
