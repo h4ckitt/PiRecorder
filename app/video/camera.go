@@ -3,13 +3,14 @@ package video
 import (
 	"bytes"
 	"fmt"
-	"github.com/icza/mjpeg"
 	"io"
 	"os"
 	"os/exec"
 	"pirecorder/config"
 	"pirecorder/logger"
 	"time"
+
+	"github.com/icza/mjpeg"
 )
 
 type Camera struct {
