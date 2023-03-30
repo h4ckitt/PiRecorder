@@ -29,7 +29,12 @@ func (c *Controller) ShowStream(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", fmt.Sprintf("multipart/x-mixed-replace; boundary=%s", mimeWriter.Boundary()))
 	partHeader := make(textproto.MIMEHeader)
 	partHeader.Add("Content-Type", "image/jpeg")
-	frames, closeChan := c.app.StartStream()
+	frames, closeChan, err := c.app.StartStream()
+
+	if err != nil {
+		helper.ReturnFailure(w, err)
+		return
+	}
 	defer close(closeChan)
 
 	for frame := range frames {
