@@ -31,8 +31,6 @@ func main() {
 	ctrl := controller.NewController(svc, logman)
 	r := router.InitRouter(ctrl, logman)
 
-	svc.Start()
-
 	logman.LogInfo("Starting server on port 8080")
 
 	if err = http.ListenAndServe(fmt.Sprintf(":%s", config.GetConfig().Port), r); err != nil {
