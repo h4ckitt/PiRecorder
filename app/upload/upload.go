@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"net/http"
 	"os"
 	"pirecorder/apperror"
 	"pirecorder/config"
 	"pirecorder/logger"
 	"sort"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 type Uploader struct {
@@ -177,6 +179,10 @@ func (u *Uploader) UploadRecording(filename string) error {
 
 	u.logger.LogInfo("Successful upload to S3", "folder_name", videosFolder, "file_name", filename)
 
+	if err = performCallBack(filename); err != nil {
+		u.logger.LogError(err, "Error performing callback", "folder_name", videosFolder, "file_name", filename)
+	}
+
 	if err = os.Remove(f); err != nil {
 		u.logger.LogError(err, "Error deleting file", "folder_name", videosFolder, "file_name", filename)
 		return apperror.ServerError
@@ -207,8 +213,10 @@ func (u *Uploader) UploadRecordings() error {
 		u.isUploading = false
 		u.uploadName = ""
 	}()
+	var files []string
 	videosFolder := config.GetConfig().VideosFolder
-	u.logger.LogInfo("Uploading All Videos to S3", "folder_name", videosFolder)
+	audiosFolder := config.GetConfig().AudiosFolder
+	u.logger.LogInfo("Uploading All Videos And Audios to S3", "video_folderName", videosFolder, "audio_folderName", audiosFolder)
 	fd, err := os.Open(videosFolder)
 
 	if err != nil {
@@ -216,12 +224,32 @@ func (u *Uploader) UploadRecordings() error {
 		return apperror.ServerError
 	}
 
-	files, err := fd.Readdirnames(0)
+	videoFiles, err := fd.Readdirnames(0)
 
 	if err != nil {
 		u.logger.LogError(err, "Error reading videos folder", "function", "UploadAllRecordings", "folder_name", videosFolder)
 		return apperror.ServerError
 	}
+
+	files = append(files, videoFiles...)
+
+	fd, err = os.Open(audiosFolder)
+
+	if err != nil {
+		u.logger.LogError(err, "Error opening audios folder", "function", "UploadAllRecordings", "folder_name", audiosFolder)
+		return apperror.ServerError
+	}
+
+	audioFiles, err := fd.Readdirnames(0)
+
+	if err != nil {
+		u.logger.LogError(err, "Error reading audios folder", "function", "UploadAllRecordings", "folder_name", audiosFolder)
+		return apperror.ServerError
+	}
+
+	files = append(files, audioFiles...)
+
+	_ = fd.Close()
 
 	deviceHostName, err := os.Hostname()
 
@@ -231,14 +259,33 @@ func (u *Uploader) UploadRecordings() error {
 	}
 
 	s3Config := config.GetConfig().S3Config
+	var (
+		ext            string
+		f              string
+		contentType    string
+		remoteFileName string
+	)
 
 	for _, file := range files {
-		if file[len(file)-4:] != ".avi" {
+		ext = file[len(file)-4:]
+		if ext != ".avi" && ext != ".wav" {
 			continue
 		}
-		u.uploadName = fmt.Sprintf("%s.avi", file)
+
+		u.uploadName = fmt.Sprintf("%s.%s", file, ext)
 		u.logger.LogInfo("Uploading file to S3", "file_name", file)
-		f := fmt.Sprintf("%s/%s", videosFolder, file)
+
+		switch ext {
+		case ".avi":
+			f = fmt.Sprintf("%s/%s", videosFolder, file)
+			contentType = "video/x-msvideo"
+			remoteFileName = fmt.Sprintf("%s/videos/%s", deviceHostName, file)
+		case ".wav":
+			f = fmt.Sprintf("%s/%s", audiosFolder, file)
+			contentType = "audio/x-wav"
+			remoteFileName = fmt.Sprintf("%s/audios/%s", deviceHostName, file)
+		}
+
 		contents, err := os.ReadFile(f)
 
 		if err != nil {
@@ -248,10 +295,10 @@ func (u *Uploader) UploadRecordings() error {
 
 		_, err = u.uploader.Upload(&s3manager.UploadInput{
 			Bucket:      aws.String(s3Config.Bucket),
-			Key:         aws.String(fmt.Sprintf("%s/videos/%s", deviceHostName, file)),
+			Key:         aws.String(remoteFileName),
 			ACL:         aws.String("private"),
 			Body:        bytes.NewReader(contents),
-			ContentType: aws.String("video/x-msvideo"),
+			ContentType: aws.String(contentType),
 		})
 
 		if err != nil {
@@ -261,11 +308,29 @@ func (u *Uploader) UploadRecordings() error {
 
 		u.logger.LogInfo("Successful upload to S3", "folder_name", videosFolder, "file_name", file)
 
+		if err = performCallBack(file); err != nil {
+			u.logger.LogError(err, "Error performing callback", "folder_name", videosFolder, "file_name", file)
+		}
+
 		if err = os.Remove(f); err != nil {
 			u.logger.LogError(err, "Error deleting file", "folder_name", videosFolder, "file_name", file)
 		}
 
 		u.logger.LogInfo("Successful deletion of file", "folder_name", videosFolder, "file_name", file)
+	}
+
+	return nil
+}
+
+func performCallBack(filename string) error {
+	resp, err := http.Get(fmt.Sprintf("https://videos-service.herokuapp.com/%s", filename))
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("received non 200 status code")
 	}
 
 	return nil
