@@ -85,7 +85,6 @@ func (m *Mic) StartRecording(filename string) error {
 		stream.Start()
 
 		<-m.audioClose
-		fmt.Println("Stopping streammmm")
 		stream.Stop()
 	}()
 	return nil
