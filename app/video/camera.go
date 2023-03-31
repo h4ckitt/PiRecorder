@@ -60,7 +60,7 @@ func StartCamera() (io.Reader, error) {
 
 	switch config.GetConfig().Environment {
 	case "dev":
-		cmd = exec.Command("ffmpeg", "-hide_banner", "-f", "v4l2", "-framerate", "30", "-video_size", "640x480", "-i", "/dev/video0", "-f", "mpjpeg", "-")
+		cmd = exec.Command("ffmpeg", "-hide_banner", "-f", "v4l2", "-framerate", "30", "-video_size", "640x480", "-i", "/dev/video0", "-b:v", "6000k", "-f", "mpjpeg", "-")
 	case "prod":
 		cmd = exec.Command("raspivid", "-o", "-", "-t", "0", "-w", "640", "-h", "480", "-fps", "30", "-cd", "MJPEG")
 	default:
@@ -145,7 +145,7 @@ func (c *Camera) StartRecording(filename string) error {
 		}()
 
 		var previousFrame []byte
-		ticker := time.Tick(33 * time.Millisecond) // 30 fps
+		ticker := time.Tick(33000 * time.Microsecond) // 30 fps
 
 		for c.isRecording {
 			<-ticker
