@@ -62,7 +62,7 @@ func StartCamera() (io.Reader, error) {
 	case "dev":
 		cmd = exec.Command("ffmpeg", "-hide_banner", "-f", "v4l2", "-framerate", "30", "-video_size", "640x480", "-i", "/dev/video0", "-b:v", "6000k", "-f", "mpjpeg", "-")
 	case "prod":
-		cmd = exec.Command("raspivid", "-o", "-", "-t", "0", "-w", "640", "-h", "480", "-fps", "30", "-cd", "MJPEG")
+		cmd = exec.Command("raspivid", "-o", "-", "-t", "0", "-w", "640", "-h", "480", "-fps", "30", "-cd", "MJPEG", "-rot", "180", "-b", "4000000")
 	default:
 		return nil, fmt.Errorf("unknown environment")
 	}
